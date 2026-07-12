@@ -1,0 +1,43 @@
+//@version=5
+indicator("RSI Divergence", overlay=false, shorttitle="RSI Div")
+
+// ─── Inputs ───────────────────────────────────────────────────────────────────
+rsi_len      = input.int(14, "RSI Length",        minval=1)
+ob_level     = input.int(70, "Overbought",        minval=50, maxval=100)
+os_level     = input.int(30, "Oversold",          minval=0,  maxval=50)
+pivot_bars   = input.int(5,  "Pivot Lookback",    minval=2)
+src          = input.source(close, "Source")
+
+// ─── RSI ──────────────────────────────────────────────────────────────────────
+rsi = ta.rsi(src, rsi_len)
+
+// ─── Pivot detection ──────────────────────────────────────────────────────────
+pivot_high_price = ta.pivothigh(src, pivot_bars, pivot_bars)
+pivot_low_price  = ta.pivotlow(src,  pivot_bars, pivot_bars)
+pivot_high_rsi   = ta.pivothigh(rsi, pivot_bars, pivot_bars)
+pivot_low_rsi    = ta.pivotlow(rsi,  pivot_bars, pivot_bars)
+
+// Bearish divergence: price makes higher high but RSI makes lower high
+bearish_div = not na(pivot_high_price) and not na(pivot_high_rsi) and
+     pivot_high_price > pivot_high_price[pivot_bars * 2] and
+     pivot_high_rsi   < pivot_high_rsi[pivot_bars * 2]
+
+// Bullish divergence: price makes lower low but RSI makes higher low
+bullish_div = not na(pivot_low_price) and not na(pivot_low_rsi) and
+     pivot_low_price < pivot_low_price[pivot_bars * 2] and
+     pivot_low_rsi   > pivot_low_rsi[pivot_bars * 2]
+
+// ─── Plots ────────────────────────────────────────────────────────────────────
+hline(ob_level, "Overbought", color.new(color.red,   40), hline.style_dashed)
+hline(os_level, "Oversold",   color.new(color.green, 40), hline.style_dashed)
+hline(50,       "Midline",    color.new(color.gray,  60), hline.style_dotted)
+
+rsi_color = rsi >= ob_level ? color.red : rsi <= os_level ? color.green : color.blue
+plot(rsi, "RSI", color=rsi_color, linewidth=2)
+
+plotshape(bullish_div, "Bullish Div", shape.triangleup,   location.bottom, color.green, size=size.small)
+plotshape(bearish_div, "Bearish Div", shape.triangledown, location.top,    color.red,   size=size.small)
+
+// ─── Alerts ───────────────────────────────────────────────────────────────────
+alertcondition(bullish_div, "Bullish RSI Divergence", "Bullish RSI divergence detected on {{ticker}} ({{interval}})")
+alertcondition(bearish_div, "Bearish RSI Divergence", "Bearish RSI divergence detected on {{ticker}} ({{interval}})")

@@ -1,0 +1,27 @@
+//@version=5
+indicator("EMA Crossover", overlay=true, shorttitle="EMA X")
+
+// ─── Inputs ───────────────────────────────────────────────────────────────────
+fast_len  = input.int(9,   "Fast EMA Length",  minval=1)
+slow_len  = input.int(21,  "Slow EMA Length",  minval=1)
+src       = input.source(close, "Source")
+
+// ─── Calculations ─────────────────────────────────────────────────────────────
+fast_ema  = ta.ema(src, fast_len)
+slow_ema  = ta.ema(src, slow_len)
+
+bullish_cross = ta.crossover(fast_ema, slow_ema)
+bearish_cross = ta.crossunder(fast_ema, slow_ema)
+
+// ─── Plots ────────────────────────────────────────────────────────────────────
+plot(fast_ema, "Fast EMA", color=color.new(color.green, 0),  linewidth=2)
+plot(slow_ema, "Slow EMA", color=color.new(color.red,   0),  linewidth=2)
+
+plotshape(bullish_cross, "Bull Cross", shape.labelup,   location.belowbar, color.green, text="▲", textcolor=color.white, size=size.small)
+plotshape(bearish_cross, "Bear Cross", shape.labeldown, location.abovebar, color.red,   text="▼", textcolor=color.white, size=size.small)
+
+bgcolor(bullish_cross ? color.new(color.green, 85) : bearish_cross ? color.new(color.red, 85) : na)
+
+// ─── Alerts ───────────────────────────────────────────────────────────────────
+alertcondition(bullish_cross, "Bullish EMA Cross", "EMA {{fast_len}}/{{slow_len}} — Bullish crossover on {{ticker}} ({{interval}})")
+alertcondition(bearish_cross, "Bearish EMA Cross", "EMA {{fast_len}}/{{slow_len}} — Bearish crossover on {{ticker}} ({{interval}})")

@@ -1,0 +1,37 @@
+//@version=5
+
+// @description Shared utility functions for TradingView Pine Script indicators
+library("Utils", overlay=false)
+
+// @function Returns the ATR-based stop distance for a given multiplier
+// @param atr_len ATR period
+// @param mult    ATR multiplier
+// @returns       Stop distance in price units
+export atr_stop(simple int atr_len, float mult) =>
+    ta.atr(atr_len) * mult
+
+// @function Detects if the current bar is inside a consolidation range
+// @param bars   Number of bars to look back
+// @param thresh Maximum range as % of price to qualify as consolidation
+// @returns      true when price is consolidating
+export is_consolidating(simple int bars, float thresh) =>
+    hi = ta.highest(high, bars)
+    lo = ta.lowest(low,  bars)
+    (hi - lo) / lo * 100 < thresh
+
+// @function Normalises a series to 0-100 range over a given lookback
+// @param src    Source series
+// @param len    Lookback period
+// @returns      Normalised value between 0 and 100
+export normalize(series float src, simple int len) =>
+    hi = ta.highest(src, len)
+    lo = ta.lowest(src,  len)
+    hi != lo ? (src - lo) / (hi - lo) * 100 : 50.0
+
+// @function Returns a colour gradient from red → yellow → green based on a 0-100 value
+// @param value Input value between 0 and 100
+// @returns     Color
+export gradient_color(float value) =>
+    value >= 50
+         ? color.from_gradient(value, 50, 100, color.yellow, color.green)
+         : color.from_gradient(value, 0,  50,  color.red,    color.yellow)

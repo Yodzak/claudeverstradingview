@@ -1,0 +1,39 @@
+//@version=5
+strategy("EMA Crossover Strategy", overlay=true, shorttitle="EMA Strat",
+     initial_capital=10000, default_qty_type=strategy.percent_of_equity,
+     default_qty_value=10, commission_type=strategy.commission.percent,
+     commission_value=0.1)
+
+// ─── Inputs ───────────────────────────────────────────────────────────────────
+fast_len   = input.int(9,  "Fast EMA",  minval=1, group="EMA Settings")
+slow_len   = input.int(21, "Slow EMA",  minval=1, group="EMA Settings")
+src        = input.source(close, "Source", group="EMA Settings")
+
+use_sl     = input.bool(true,  "Use Stop Loss",   group="Risk Management")
+use_tp     = input.bool(true,  "Use Take Profit", group="Risk Management")
+sl_pct     = input.float(2.0,  "Stop Loss %",     minval=0.1, step=0.1, group="Risk Management")
+tp_pct     = input.float(4.0,  "Take Profit %",   minval=0.1, step=0.1, group="Risk Management")
+
+// ─── Calculations ─────────────────────────────────────────────────────────────
+fast_ema   = ta.ema(src, fast_len)
+slow_ema   = ta.ema(src, slow_len)
+
+bull_cross = ta.crossover(fast_ema,  slow_ema)
+bear_cross = ta.crossunder(fast_ema, slow_ema)
+
+// ─── Entries ──────────────────────────────────────────────────────────────────
+if bull_cross
+    strategy.entry("Long", strategy.long)
+    if use_sl
+        strategy.exit("Long SL/TP", "Long",
+             stop   = close * (1 - sl_pct / 100),
+             limit  = use_tp ? close * (1 + tp_pct / 100) : na)
+
+if bear_cross
+    strategy.close("Long", comment="EMA Bear Cross")
+
+// ─── Plots ────────────────────────────────────────────────────────────────────
+plot(fast_ema, "Fast EMA", color.green, 2)
+plot(slow_ema, "Slow EMA", color.red,   2)
+
+bgcolor(strategy.position_size > 0 ? color.new(color.green, 92) : na)
